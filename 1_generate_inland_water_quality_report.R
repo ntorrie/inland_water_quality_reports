@@ -1,4 +1,4 @@
-# This script generates county reports for all counties specified in << county >>
+# This script generates the inland water quality county report
 
 # SECTION 1: Read in document history and report files
 
