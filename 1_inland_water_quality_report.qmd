@@ -151,13 +151,13 @@ crs <- 4326
 \newpage
 # Introduction
 
-River and lake systems provide critical habitat for some migratory marine species during key life stages, and have important impacts on coastal habitat at their outflow points. In Nova Scotia, there are are identified gaps in water quality data for these inland waterbodies [@RN32829].
+River and lake systems provide critical habitat for some migratory marine species during key life stages and have important impacts on coastal habitat at their outflow points. In Nova Scotia, there are are identified gaps in water quality data for inland waterbodies [@RN32829].
 
-The Centre for Marine Applied Research (CMAR) measures [essential ocean variables](https://goosocean.org/what-we-do/framework/essential-ocean-variables/) around the coast of Nova Scotia through the Coastal Monitoring Program. The Nova Scotia Department of Fisheries and Aquaculture started this program in 2015 to inform aquaculture site selection and management. CMAR assumed responsibility for the program in 2019 and has since expanded its scope and mandate. Recently, CMAR began monitoring on inland waterbodies in Nova Scotia to address data gaps. For more information on CMAR and the Coastal Monitoring Program, visit the [CMAR website](https://cmar.ca/). 
-
-This document presents deployment details and summary figures of Water Quality data collected from rivers and lakes in Nova Scotia (Figure `r k`). The data are available for download from the Nova Scotia [Open Data Portal](https://data.novascotia.ca/Nature-and-Environment/Nova-Scotia-Inland-Water-Quality-Dataset/qaf8-y5x2/about_data). 
+To address this gap, the Centre for Marine Applied Research (CMAR) has measured Water Quality (temperature and occasionally dissolved oxygen) at several rivers and lakes in the province. This document presents deployment details and summary figures from this data collection effort (Figure `r k`). The data are available for download from the Nova Scotia [Open Data Portal](https://data.novascotia.ca/Nature-and-Environment/Nova-Scotia-Inland-Water-Quality-Dataset/qaf8-y5x2/about_data). 
 
 This document should be considered as a guide only. Data collection and retrieval are ongoing. The information may be revised pending ongoing data collection and analyses. 
+
+CMAR also operates a Coastal Monitoring Program to measure [essential ocean variables](https://goosocean.org/what-we-do/framework/essential-ocean-variables/) (e.g., temperature, dissolved oxygen, salinity) around the coast of Nova Scotia. For more information on CMAR and the Coastal Monitoring Program, visit the [CMAR website](https://cmar.ca/). 
 
 ```{r}
 #| label: ns-map
@@ -208,29 +208,7 @@ lakes_sf <- read_sf(
 #add piper lake and hourglass lake to river line shapefile
 lake_names <- c("Hourglass Lake", "Piper Lake")
 
-# lakes_sf <- st_locations_sf %>% 
-#   filter(station %in% lake_names) %>%
-#   rename(rivname_1 = station) %>%
-#   select(-waterbody) %>% 
-#   mutate(
-#     uniqueid = "",
-#     cgndb_key = "",
-#     county = "",
-#     du = "",
-#     primary_ws = "",
-#     significan = "",
-#     shape_leng = ""
-#   )
-
 waterbodies_sf <- bind_rows(river_lines_sf, lakes_sf)
-
-# generate a bounding box for the station locations map
-# ns_bbox <- ns %>%
-#   st_transform(crs = crs) %>%
-#   st_bbox() %>%
-#   normalize_bbox_dims()
-
-#west_buffer <- 1
 
 x_min = -68
 x_max = -58.5
@@ -276,7 +254,7 @@ k = k + 1
 \newpage
 ## Data Collection 
 
-CMAR primarily collects inland Water Quality data using sensors secured inside a perforated PVC housing and anchored to the riverbed by a cinderblock (Figure `r k`). Sensors are usually deployed in 1.5m depths or shallower, and accessed by foot.
+CMAR typically collects inland Water Quality data using sensors secured inside a perforated PVC housing and anchored to the riverbed by a cinderblock (Figure `r k`). Sensors are usually deployed in 1.5 m depths or shallower, and accessed by foot.
 
 ```{=typst} 
 #figure(image("images/inland_river_deployment_graphic.png"))
@@ -295,10 +273,9 @@ CMAR occasionally collects inland temperature and dissolved oxygen data using mo
 #figure(image("images/sensor_string.png"))
 ```
 
-
 **Figure `r k`:** Example sensor string configuration (not to scale).
 
-Sensors are typically deployed at a station for several months to a year, and data are logged every 1 minute to 1 hour. Sensors must be retrieved to offload the data. The retrieval method depends on the sensor configuration, and may include triggering an acoustic release, directly removing sensors from surface moorings, or removing shallow water bottom-mounted sensors on foot (Table `r i`). Interest-holder needs and characteristics of the station dictate the deployment design, including anchor weight, number and type of sensors, and configuration. 
+Sensors are typically deployed at a station for several months to a year, and data are logged every 15 minutes. Sensors must be retrieved to offload the data. The retrieval method depends on the sensor configuration, and may include triggering an acoustic release, directly removing sensors from surface moorings, or removing shallow water bottom-mounted sensors on foot (Table `r i`). Interest-holder needs and characteristics of the station dictate the deployment design, including anchor weight, number and type of sensors, and configuration. 
 
 \newpage
 
@@ -349,10 +326,11 @@ Inland Water Quality data is presented by waterbody. For each waterbody, there i
 #| fig.height: 5
 #| results: asis
 
+ # note: round hill river points are outside the bbox for the river line
 hard_buffer <- c(lake_names, "Round Hill River")
 
 for(i in seq_along(waterbodies)) {
-#  for(i in 1:3) {
+  #  for(i in 1:3) {
   
   k <- k + 1
   
@@ -395,36 +373,20 @@ for(i in seq_along(waterbodies)) {
   st_locations_sf_i <- st_locations_sf %>%
     filter(waterbody == waterbody_i)
   
-  # if(waterbody_i %in% hard_buffer) { 
-  #   
-  #   river_lines_sf_i <- NULL
-  #   
-  #   map_bbox_i <- waterbodies_sf %>%
-  #     st_transform(crs = crs) %>%
-  #     st_bbox() %>%
-  #     normalize_bbox_dims()
-  #   
-  #   map_buffer_i <- 0.38
-  # 
-  # } else { 
-    # filter to relevant river
-    # note: round hill river points are outside the bbox for the river line
-    waterbody_sf_i <- waterbodies_sf %>%
-      filter(waterbody == waterbody_i) 
+  waterbody_sf_i <- waterbodies_sf %>%
+    filter(waterbody == waterbody_i) 
+  
+  if(waterbody_i %in% hard_buffer) { 
     
-    if(waterbody_i %in% hard_buffer) { 
-      
-
-      map_buffer_i <- 0.38
-      
-    } else { map_buffer_i <- waterbody_sf_i$shape_leng * 0.15 }
+    map_buffer_i <- 0.38
     
-    # bounding box around river line
-    map_bbox_i <- waterbody_sf_i %>%
-      st_transform(crs = crs) %>%
-      st_bbox() %>%
-      normalize_bbox_dims()
-  #}
+  } else { map_buffer_i <- waterbody_sf_i$shape_leng * 0.15 }
+  
+  # bounding box around river/lake
+  map_bbox_i <- waterbody_sf_i %>%
+    st_transform(crs = crs) %>%
+    st_bbox() %>%
+    normalize_bbox_dims()
   
   river_map <- generate_river_map(
     ns, waterbody_sf_i, st_locations_sf_i, map_bbox_i, map_buffer_i
@@ -433,12 +395,10 @@ for(i in seq_along(waterbodies)) {
   subchunkify(river_map, fig_height = 5, fig_width = 8.5, dpi = 300)
   
   # figure caption
-  i_figure <- k + 1
+  i_figure <- k
   fig_caption_i <- glue("**Figure {i_figure}:** {waterbody_i} {fig_map_caption}")
   
   cat('\n', fig_caption_i, '\n')
-  
-  #cat('\n')
   
   # plot for each station
   for (j in seq_along(stations)) {
@@ -465,13 +425,13 @@ for(i in seq_along(waterbodies)) {
     subchunkify(p, fig_height = h, fig_width = 8.5, dpi = 300)
     
     # figure caption
-    k = k + 1
-    i_figure <- k + 1
+    k <- k + 1
+   # i_figure <- k + 1
     
     if(station_j %in% c(lake_names, "Sissiboo River")) {
-      fig_caption_i <- glue("**Figure {i_figure}:** {station_j} water quality data.")
+      fig_caption_i <- glue("**Figure {k}:** {station_j} water quality data.")
     } else {
-      fig_caption_i <- glue("**Figure {i_figure}:** {station_j} {fig_caption}")
+      fig_caption_i <- glue("**Figure {k}:** {station_j} {fig_caption}")
     }
     
     cat('\n', fig_caption_i, '\n')
@@ -479,8 +439,6 @@ for(i in seq_along(waterbodies)) {
     cat('\n')
   }
 }
-  
-
 
 ```
 
@@ -497,25 +455,21 @@ CMAR aims to prioritize data collection and processing efforts that best serve c
 
 ```{r}
 i <- i + 1
-
-# note: in the future, import the document history as a separate file for ease of updating
-
-# i <- i_table + 1
-# 
-# params$doc.hist %>% 
-#   select(-c(County, Notes)) %>% 
-#   kable(
-#     align = "ccl", caption = glue("Table {i}: Document history.")
-#   )
 ```
 
 **Table `r i`:** Description of sensor string configurations.
+```{=typst}
+#set align(center)
+#table(
+  columns: 3, align: center,
+  table.header[Version][Date][Amendments], 
+  [V1],[2025-10-25],[New document]
+    )
+    
+#v(11pt)
 
-| **Version** | **Date** | **Amendments** |
-|---|---|---|
-|     V1    |     2025-10-20    |     New document    |    
-
-<br>
+#set align(left)
+```
 
 # References
 
