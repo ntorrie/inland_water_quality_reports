@@ -2,61 +2,6 @@
 # functions for Water Quality Reports
 # moved to here to decrease length of report script
 
-
-# apply salinity correction factor to DO data -----------------------------
-
-# correct_do_data <- function(dat, sal = 30.6) {
-# 
-#   dat_other <- dat %>%
-#     filter(is.na(dissolved_oxygen_uncorrected_mg_per_l))
-# 
-#   dat_do <- dat %>%
-#     filter(!is.na(dissolved_oxygen_uncorrected_mg_per_l))
-# 
-#   if("salinity_psu" %in% colnames(dat_do)) {
-# 
-#     if(is.na(unique((dat_do$salinity_psu)))) {
-#       dat_do <- dat_do %>% select(-salinity_psu)
-#     } else message("use salinity column in dat for Fs")
-#   }
-# 
-#   dat_do %>%
-#     do_salinity_correction(sal = sal) %>%
-#     mutate(
-#       dissolved_oxygen_mg_per_l = dissolved_oxygen_uncorrected_mg_per_l * F_s
-#     ) %>%
-#     select(-c(dissolved_oxygen_uncorrected_mg_per_l, salinity_psu, F_s)) %>%
-#     bind_rows(dat_other)
-# }
-# 
-# 
-# 
-# # filter Tickle Island 1 --------------------------------------------------
-# # filter out all DO values flagged 3 at 5 m
-# # filter out DO values flagged 3 for rolling sd at 60 m
-# # keep DO values flagged 3 for climatology at 60 m
-# # filter out measured sensor depth rolling sd at 5 m
-# 
-# filter_tickle_island_1 <- function(dat) {
-#   dat %>%
-#     qc_pivot_longer(qc_tests = c("qc", "rolling_sd")) %>%
-#     filter(
-#       !(variable == "sensor_depth_measured_m" &
-#           sensor_depth_at_low_tide_m == 5 &
-#           rolling_sd_flag_value == 3),
-# 
-#       !(variable == "dissolved_oxygen_percent_saturation" &
-#           sensor_depth_at_low_tide_m == 5 &
-#           qc_flag_value == 3),
-# 
-#       !(variable == "dissolved_oxygen_percent_saturation" &
-#           sensor_depth_at_low_tide_m == 60 &
-#           rolling_sd_flag_value == 3)
-#     ) %>%
-#     qc_pivot_wider()
-# }
-
-
 # figure height -----------------------------------------------------------
 # calculate the height of figure based on the number of measured variables
 
@@ -77,25 +22,51 @@ calc_fig_height <- function(dat, h1) {
 }
 
 
-# figure caption ----------------------------------------------------------
+# river map ---------------------------------------------------------------
+# generate map of river and associated sampling stations
+# must have ggplot2, ggsflabel, and ggspatial loaded 
 
-# glue_do_fig_caption <- function(fig_cap, station) {
-# 
-#   if(station == "Tickle Island 1") {
-#     fig_cap <- glue("{fig_cap} Dissolved oxygen observations recorded at 60 m that were flagged \"Suspect/Of Interest\" were considered \"Of Interest\" for this deployment and included in the figure. Measured depth observations were considered \"Suspect\" and are not included.")
-#   }  else{
-#     fig_cap <- glue("{fig_cap} Dissolved oxygen observations flagged \"Suspect/Of Interest\" were considered \"Of Interest\" for this deployment and included in the figure.")
-#   }
-# 
-#   fig_cap
-# }
+# ns_shp: shapefile (sf object) of Nova Scotia
+# river_sf: sf object with river geometry 
+# st_locations_sf: sf object with station geometry
+# map_bbox: bbox object providing coordinates for map area
+# map_buffer: numeric argument indicating how much buffer to map around the river
+## or station coordinates bounding box
 
+# text_size: numeric argument for size of text labels
 
-# figure caption ----------------------------------------------------------
-# 
-# glue_sal_fig_caption <- function(fig_cap) {
-# 
-#   glue("{fig_cap} Salinity observations flagged \"Suspect/Of Interest\" were considered \"Of Interest\" for this deployment and included in the figure.")
-# }
-
-
+# waterbody map
+generate_river_map <- function(
+    ns_shp, river_sf, st_locations_sf, map_bbox, map_buffer, text_size = 4
+) {
+  
+  ggplot() +
+    geom_sf(data = ns_shp, linewidth = 0.25) +
+    scale_x_continuous(
+      limits = c(map_bbox$xmin - map_buffer, map_bbox$xmax + map_buffer)
+    ) +
+    scale_y_continuous(
+      limits = c(map_bbox$ymin - map_buffer, map_bbox$ymax + map_buffer)
+    ) +
+    #coord_sf(expand = FALSE, lims_method = "geometry_bbox", default_crs = NULL) +
+    theme_map() +
+    theme(
+      panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5),
+      axis.title = element_blank(),
+      legend.position = "none"
+    ) +
+    geom_sf(data = river_sf, color = "#00a4e4") +
+    geom_sf(data = st_locations_sf, size = 3) +
+    annotation_scale(location = "br") +
+    annotation_north_arrow(
+      location = "tl",
+      which_north = "true",
+      height = unit(1, "cm"),
+      width = unit(1, "cm")
+    ) +
+    ggsflabel::geom_sf_text_repel(
+      data = st_locations_sf,
+      aes(label = station),
+      seed = 12, size = text_size, color = "black", bg.color = "white"
+    )
+}
